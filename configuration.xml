@@ -1,0 +1,265 @@
+<configuration>
+	<catalogs>
+		<catalog id="base"
+			namespace="http://schemas.olivarim.com/ums/1.0/base"
+			uri="file:///C:/Users/marin/Code/ums/catalogs/base">
+			<mappings>
+				<mapping subpath="cities" element="city"/>
+				<mapping subpath="cities" element="country"/>
+				<mapping subpath="cities" element="countryDivision"/>
+				<mapping subpath="languages" element="language"/>
+				<mapping subpath="standards" element="standard"/>
+			</mappings>
+		</catalog>
+		<catalog id="audio"
+			namespace="http://schemas.olivarim.com/ums/1.0/audio"
+			uri="file:///C:/Users/marin/Code/ums/catalogs/audio">
+			<mappings>
+				<mapping subpath="labels" element="label"/>
+			</mappings>
+		</catalog>
+		<catalog id="music"
+			namespace="http://schemas.olivarim.com/ums/1.0/music"
+			uri="file:///C:/Users/marin/Code/ums/catalogs/music">
+			<mappings>
+				<mapping subpath="catalogs" element="catalog"/>
+				<mapping subpath="composers" element="composer"/>
+				<mapping subpath="compositions" element="lyrics"/>
+				<mapping subpath="compositions" element="movement"/>
+				<mapping subpath="compositions" element="work"/>
+				<mapping subpath="conductors" element="conductor"/>
+				<mapping subpath="ensembles" element="ensemble"/>
+				<mapping subpath="forms" element="form"/>
+				<mapping subpath="instrumentalists" element="instrumentalist"/>
+				<mapping subpath="instruments" element="instrument"/>
+				<mapping subpath="keys" element="key"/>
+				<mapping subpath="lyricists" element="lyricist"/>
+				<mapping subpath="scores" element="book"/>
+				<mapping subpath="styles" element="style"/>
+				<mapping subpath="venues" element="venue"/>
+			</mappings>
+		</catalog>
+	</catalogs>
+	<helpers>
+		<helper id="VorbisCommentConverter">
+			<constraints>
+				<constraint id="document-binding-element-namespace">http://schemas.olivarim.com/ums/1.0/audio</constraint>
+				<constraint id="document-binding-element-name">albumTrackBinding</constraint>
+				<constraint id="document-document-element-namespace">http://schemas.olivarim.com/ums/1.0/base</constraint>
+				<constraint id="document-document-element-name">file</constraint>
+				<constraint id="file-cardinality">SidecarOrOrphan</constraint>
+			</constraints>
+			<options>
+				<!-- Default value: " & ", with non breakable spaces -->
+				<option id="dynamic-album-rendering-album-artist-delimiter">&#160;&#038;&#160;</option>
+				<option id="dynamic-album-rendering-album-artist-use-sort-variants">True</option>
+				<option id="feature-dynamic-albums">True</option>
+				<option id="feature-composer-as-artist">False</option>
+				<option id="feature-conductor-as-artist">False</option>
+				<option id="feature-ensemble-as-artist">False</option>
+				<option id="feature-ensemble-as-artist-instrument-suffix">False</option>
+				<option id="feature-ensemble-instrument-suffix">False</option>
+				<option id="feature-instrumentalist-as-artist">True</option>
+				<option id="feature-instrumentalist-as-artist-instrument-suffix">False</option>
+				<option id="feature-instrumentalist-as-performer">True</option>
+				<option id="feature-instrumentalist-as-performer-instrument-suffix">True</option>
+				<option id="feature-instrumentalist-instrument-suffix">False</option>
+				<option id="feature-lyricist-as-artist">False</option>
+				<option id="feature-musical-form-as-genre">True</option>
+				<option id="feature-musical-style-as-genre">True</option>
+				<option id="rendering-musical-form-as-genre-prefix">#</option>
+				<option id="rendering-musical-style-as-genre-prefix">~</option>
+				<option id="vorbis-label-album-artist">ALBUMARTIST</option>
+				<option id="vorbis-label-album-full-title">ALBUM</option>
+				<option id="vorbis-label-album-sort-title">ALBUMSORT</option>
+				<option id="vorbis-label-album-subtitle"></option>
+				<option id="vorbis-label-artist-full-name">ARTIST</option>
+				<option id="vorbis-label-artist-short-name">ARTISTSHORT</option>
+				<option id="vorbis-label-artist-sort-name">ARTISTSORT</option>
+				<option id="vorbis-label-asin">ASIN</option>
+				<option id="vorbis-label-barcode">BARCODE</option>
+				<option id="vorbis-label-composer-full-name">COMPOSER</option>
+				<option id="vorbis-label-composer-short-name">COMPOSERSHORT</option>
+				<option id="vorbis-label-composer-sort-name">COMPOSERSORT</option>
+				<option id="vorbis-label-conductor-full-name">CONDUCTOR</option>
+				<option id="vorbis-label-conductor-short-name">CONDUCTORSHORT</option>
+				<option id="vorbis-label-conductor-sort-name">CONDUCTORSORT</option>
+				<option id="vorbis-label-date-full">DATE</option>
+				<option id="vorbis-label-date-year">YEAR</option>
+				<option id="vorbis-label-ean">EAN</option>
+				<option id="vorbis-label-ensemble-full-label">ENSEMBLE</option>
+				<option id="vorbis-label-ensemble-short-label">ENSEMBLESHORT</option>
+				<option id="vorbis-label-ensemble-sort-label">ENSEMBLESORT</option>
+				<option id="vorbis-label-genre">GENRE</option>
+				<option id="vorbis-label-incipit">INCIPIT</option>
+				<option id="vorbis-label-instrumentalist-full-name">INSTRUMENTALIST</option>
+				<option id="vorbis-label-instrumentalist-short-name">INSTRUMENTALISTSHORT</option>
+				<option id="vorbis-label-instrumentalist-sort-name">INSTRUMENTALISTSORT</option>
+				<option id="vorbis-label-label-full-label">LABEL</option>
+				<option id="vorbis-label-lyricist-full-name">LYRICIST</option>
+				<option id="vorbis-label-lyricist-short-name">LYRICISTSHORT</option>
+				<option id="vorbis-label-lyricist-sort-name">LYRICISTSORT</option>
+				<option id="vorbis-label-medium-number-combined">DISC</option>
+				<option id="vorbis-label-medium-number-simple">DISCNUMBER</option>
+				<option id="vorbis-label-medium-total">DISCTOTAL</option>
+				<option id="vorbis-label-movement-musical-key">KEY</option>
+				<option id="vorbis-label-musical-catalog-id">CATALOGID</option>
+				<option id="vorbis-label-musical-form">MUSICALFORM</option>
+				<option id="vorbis-label-musical-style">STYLE</option>
+				<option id="vorbis-label-original-album-artist">ORIGINALALBUMARTIST</option>
+				<option id="vorbis-label-original-album-full-title">ORIGINALALBUM</option>
+				<option id="vorbis-label-original-album-sort-title">ORIGINALALBUMSORT</option>
+				<option id="vorbis-label-original-album-subtitle">ORIGINALALBUMSUBTITLE</option>
+				<option id="vorbis-label-original-date-full">ORIGINALDATE</option>
+				<option id="vorbis-label-original-date-year">ORIGINALYEAR</option>
+				<option id="vorbis-label-original-medium-number-combined">ORIGINALDISC</option>
+				<option id="vorbis-label-original-medium-number-simple">ORIGINALDISCNUMBER</option>
+				<option id="vorbis-label-original-medium-total">ORIGINALDISCTOTAL</option>
+				<option id="vorbis-label-original-place">ORIGINALPLACE</option>
+				<option id="vorbis-label-original-track-full-title">ORIGINALTITLE</option>
+				<option id="vorbis-label-original-track-number-combined">ORIGINALTRACK</option>
+				<option id="vorbis-label-original-track-number-simple">ORIGINALTRACKNUMBER</option>
+				<option id="vorbis-label-original-track-sort-title">ORIGINALTITLESORT</option>
+				<option id="vorbis-label-original-track-subtitle">ORIGINALSUBTITLE</option>
+				<option id="vorbis-label-original-track-total">ORIGINALTRACKTOTAL</option>
+				<option id="vorbis-label-performance-date-full">PERFORMANCEDATE</option>
+				<option id="vorbis-label-performance-date-year">PERFORMANCEYEAR</option>
+				<option id="vorbis-label-performance-place">PERFORMANCEPLACE</option>
+				<option id="vorbis-label-performer-full-name">PERFORMER</option>
+				<option id="vorbis-label-performer-short-name">PERFORMERSHORT</option>
+				<option id="vorbis-label-performer-sort-name">PERFORMERSORT</option>
+				<option id="vorbis-label-place">PLACE</option>
+				<option id="vorbis-label-track-full-title">TITLE</option>
+				<option id="vorbis-label-track-number-combined">TRACK</option>
+				<option id="vorbis-label-track-number-simple">TRACKNUMBER</option>
+				<option id="vorbis-label-track-sort-title">TITLESORT</option>
+				<option id="vorbis-label-track-subtitle">SUBTITLE</option>
+				<option id="vorbis-label-track-total">TRACKTOTAL</option>
+				<option id="vorbis-label-work-full-title">WORK</option>
+				<option id="vorbis-label-work-musical-key">MAINKEY</option>
+				<option id="vorbis-label-work-sort-title">WORKSORT</option>
+				<option id="vorbis-label-work-subtitle">WORKSUBTITLE</option>
+			</options>
+		</helper>
+		<helper id="VorbisCommentUpdater">
+			<constraints>
+				<constraint id="document-binding-element-namespace">http://schemas.olivarim.com/ums/1.0/audio</constraint>
+				<constraint id="document-binding-element-name">albumTrackBinding</constraint>
+				<constraint id="document-document-element-namespace">http://schemas.olivarim.com/ums/1.0/base</constraint>
+				<constraint id="document-document-element-name">file</constraint>
+				<constraint id="file-cardinality">Sidecar</constraint>
+			</constraints>
+			<options>
+				<option id="path-to-metaflac">C:\Program Files\Flac\metaflac.exe</option>
+				<option id="remove-all-comments">True</option>
+				<option id="tag-file-persist">True</option>
+				<option id="tag-file-extension">.tags</option>
+			</options>
+		</helper>
+	</helpers>
+	<schemas>
+		<schema id="audio" namespace="http://schemas.olivarim.com/ums/1.0/audio" uri="file:///C:/Users/marin/Code/ums/schemas/audio.rng"/>
+		<schema id="base" namespace="http://schemas.olivarim.com/ums/1.0/base" uri="file:///C:/Users/marin/Code/ums/schemas/base.rng"/>
+		<schema id="music" namespace="http://schemas.olivarim.com/ums/1.0/music" uri="file:///C:/Users/marin/Code/ums/schemas/music.rng"/>
+	</schemas>
+	<stylesheets>
+		<stylesheet id="expander" relpath="stylesheets/music/expander/expander.xsl"/>
+	</stylesheets>
+	<tools>
+		<tool id="jre-bin" path="C:\Program Files (x86)\Java\jre1.8.0_144\bin\java.exe"/>
+		<tool id="jing-jar" path="C:\Program Files\XMLBlueprint 13\JavaLib\jing-trang-20151127\bin\jing.jar"/>
+		<tool id="saxon-jar" path="C:\Program Files\XMLBlueprint 13\JavaLib\SaxonPE9-7-0-18J\saxon9pe.jar"/>
+	</tools>
+	<rendering>
+		<option id="audio-track-number-format">{0:D2}</option>
+		<option id="audio-track-number-show">False</option>
+		<option id="audio-track-title-include-all-movements">False</option>
+		<option id="audio-track-title-movement-delimiter"> / </option>
+		<option id="audio-track-title-show">True</option>
+		<option id="date-format-full">dd-MM-yyyy</option>
+		<option id="date-format-year">yyyy</option>
+		<option id="date-format-year-month">MMMM yyyy</option>
+		<option id="event-date-place-delimiter"> - </option>
+		<option id="medium-number-format">{0:D2}</option>
+		<option id="medium-side-prefix">/</option>
+		<option id="medium-side-suffix"></option>
+		<option id="medium-title-prefix">(</option>
+		<option id="medium-title-show">True</option>
+		<option id="medium-title-suffix">)</option>
+		<option id="music-catalog-id-list-delimiter">, </option>
+		<option id="music-catalog-id-list-prefix">(</option>
+		<option id="music-catalog-id-list-suffix">)</option>
+		<option id="music-performance-composer-list-delimiter">/</option>
+		<option id="music-performance-composer-list-prefix"></option>
+		<option id="music-performance-composer-list-suffix"></option>
+		<option id="music-performance-partial-piece-suffix">(Extrait)</option>
+		<option id="music-performance-piece-title-delimiter"> / </option>
+		<option id="music-performance-piece-title-max-count">2</option>
+		<option id="music-performer-list-delimiter">/</option>
+		<option id="music-performer-list-prefix">(</option>
+		<option id="music-performer-list-suffix">)</option>
+		<option id="music-performer-performed-instrument-list-delimiter">/</option>
+		<option id="music-performer-performed-instrument-list-prefix">[</option>
+		<option id="music-performer-performed-instrument-list-show">True</option>
+		<option id="music-performer-performed-instrument-list-suffix">]</option>
+		<option id="music-section-level-delimiter"> - </option>
+		<option id="music-section-number-delimiter">.</option>
+		<option id="music-section-number-show">True</option>
+		<option id="music-section-title-show">True</option>
+		<option id="musical-key-capitalize-first-letter">True</option>
+		<option id="musical-key-prefer-short">False</option>
+		<option id="musical-key-prefix">en&#160;</option>
+		<option id="musical-key-suffix"></option>
+		<option id="musical-movement-character-list-delimiter">/</option>
+		<option id="musical-movement-character-list-prefix">(</option>
+		<option id="musical-movement-character-list-show">True</option>
+		<option id="musical-movement-character-list-suffix">)</option>
+		<option id="musical-movement-form-list-delimiter">/</option>
+		<option id="musical-movement-form-list-prefix"></option>
+		<option id="musical-movement-form-list-show">True</option>
+		<option id="musical-movement-form-list-suffix"></option>
+		<option id="musical-movement-incipit-prefix">&#171;&#160;</option>
+		<option id="musical-movement-incipit-show">True</option>
+		<option id="musical-movement-incipit-suffix">&#160;&#187;</option>
+		<option id="musical-movement-musical-key-show">True</option>
+		<option id="musical-movement-tempo-marking-list-prefix"></option>
+		<option id="musical-movement-tempo-marking-list-show">True</option>
+		<option id="musical-movement-tempo-marking-list-suffix"></option>
+		<option id="musical-movement-title-infix">:</option>
+		<option id="musical-movement-title-show">True</option>
+		<option id="musical-work-catalog-id-list-show">True</option>
+		<option id="musical-work-composer-list-delimiter">/</option>
+		<option id="musical-work-composer-list-prefix"></option>
+		<option id="musical-work-composer-list-show">True</option>
+		<option id="musical-work-composer-list-suffix"> -</option>
+		<option id="musical-work-musical-key-show">True</option>
+		<option id="musical-work-year-list-completion-show">False</option>
+		<option id="musical-work-year-list-delimiter">/</option>
+		<option id="musical-work-year-list-inception-show">False</option>
+		<option id="musical-work-year-list-prefix">(</option>
+		<option id="musical-work-year-list-premiere-show">True</option>
+		<option id="musical-work-year-list-suffix">)</option>
+		<option id="musical-performance-year-prefix">, </option>
+		<option id="place-list-delimiter">, </option>
+		<option id="variants-fallback-language">en</option>
+		<option id="variants-prefer-common-labels">True</option>
+		<option id="variants-prefer-common-names">True</option>
+		<option id="variants-preferred-language">fr</option>
+		<option id="variants-pseudonym-prefix">('</option>
+		<option id="variants-pseudonym-suffix">')</option>
+		<option id="variants-sort-name-infix">,</option>
+		<option id="variants-use-default">True</option>
+		<option id="variants-use-fake-sort-variants">True</option>
+		<option id="variants-use-original">False</option>
+		<option id="variants-use-pseudonyms">True</option>
+	</rendering>
+	<system>
+		<option id="document-cache-lifetime">600</option>
+		<option id="export-clixml-depth">15</option>
+		<option id="ums-file-extension">.ums</option>
+		<option id="ums-folder-name-cache">cache</option>
+		<option id="ums-folder-name-main">ums</option>
+		<option id="ums-folder-name-static">static</option>
+		<option id="hide-management-folder">True</option>
+	</system>
+</configuration>
