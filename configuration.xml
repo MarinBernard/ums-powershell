@@ -2,7 +2,7 @@
 	<catalogs>
 		<catalog id="base"
 			namespace="http://schemas.olivarim.com/ums/1.0/base"
-			uri="file:///C:/Users/marin/Code/ums/catalogs/base">
+			uri="file:///C:/Users/marin/Code/ums-catalogs/base">
 			<mappings>
 				<mapping subpath="cities" element="city"/>
 				<mapping subpath="cities" element="country"/>
@@ -13,14 +13,14 @@
 		</catalog>
 		<catalog id="audio"
 			namespace="http://schemas.olivarim.com/ums/1.0/audio"
-			uri="file:///C:/Users/marin/Code/ums/catalogs/audio">
+			uri="file:///C:/Users/marin/Code/ums-catalogs/audio">
 			<mappings>
 				<mapping subpath="labels" element="label"/>
 			</mappings>
 		</catalog>
 		<catalog id="music"
 			namespace="http://schemas.olivarim.com/ums/1.0/music"
-			uri="file:///C:/Users/marin/Code/ums/catalogs/music">
+			uri="file:///C:/Users/marin/Code/ums-catalogs/music">
 			<mappings>
 				<mapping subpath="catalogs" element="catalog"/>
 				<mapping subpath="composers" element="composer"/>
@@ -158,9 +158,9 @@
 		</helper>
 	</helpers>
 	<schemas>
-		<schema id="audio" namespace="http://schemas.olivarim.com/ums/1.0/audio" uri="file:///C:/Users/marin/Code/ums/schemas/audio.rng"/>
-		<schema id="base" namespace="http://schemas.olivarim.com/ums/1.0/base" uri="file:///C:/Users/marin/Code/ums/schemas/base.rng"/>
-		<schema id="music" namespace="http://schemas.olivarim.com/ums/1.0/music" uri="file:///C:/Users/marin/Code/ums/schemas/music.rng"/>
+		<schema id="audio" namespace="http://schemas.olivarim.com/ums/1.0/audio" uri="file:///C:/Users/marin/Code/ums/ums-schemas/audio.rng"/>
+		<schema id="base" namespace="http://schemas.olivarim.com/ums/1.0/base" uri="file:///C:/Users/marin/Code/ums/ums-schemas/base.rng"/>
+		<schema id="music" namespace="http://schemas.olivarim.com/ums/1.0/music" uri="file:///C:/Users/marin/Code/ums/ums-schemas/music.rng"/>
 	</schemas>
 	<stylesheets>
 		<stylesheet id="expander" relpath="stylesheets/music/expander/expander.xsl"/>

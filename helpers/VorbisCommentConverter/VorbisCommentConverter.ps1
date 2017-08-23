@@ -6,7 +6,7 @@
 #
 ###############################################################################
 
-class VorbisCommentConverter
+class VorbisCommentConverter : ForeignMetadataConverter
 {
     ###########################################################################
     # Static properties
@@ -159,7 +159,8 @@ class VorbisCommentConverter
     # Constructors
     ###########################################################################
 
-    VorbisCommentConverter([object[]] $Options)
+    # Default constructor. Initializes converter options.
+    VorbisCommentConverter([object[]] $Options) : base()
     {
         foreach ($_option in $Options)
         {
@@ -214,31 +215,7 @@ class VorbisCommentConverter
     }
 
     ###########################################################################
-    # Vorbis Comment handling
-    ###########################################################################
-
-    [string] CreateVorbisComment([string] $LabelId, [string] $LabelValue)
-    {
-        $_vc = ""
-        $_sanitizedValue = $LabelValue.Trim()
-
-        # We only return the comment if the label ID is known,
-        # if the label is not blank, and if the value is not empty.
-        # Else, the comment is silently discarded.
-        if (
-            ($this.VorbisLabels.ContainsKey($LabelId)) -and
-            ($this.VorbisLabels[$LabelId]) -and
-            ($_sanitizedValue))
-        {
-            
-            $_vc = $($this.VorbisLabels[$LabelId] + "=" + $_sanitizedValue)
-        }
-
-        return $_vc
-    }
-
-    ###########################################################################
-    #   Converters
+    # Concrete implementations of [ForeignMetadataConverter] abstract methods
     #--------------------------------------------------------------------------
     #
     #   Method arguments are typeless since we may work on deserialized
@@ -247,8 +224,15 @@ class VorbisCommentConverter
     ###########################################################################
 
     # Main entry point. This method acts as a dispatch box, routing conversion
-    # tasks to a more specific conversion method.
-    [string[]] Convert($Metadata)
+    # tasks to a more specific subconversion method.
+    # Implements an abstract method from the [ForeignMetadataConverter] class.
+    # Parameters:
+    #   - $Metadata is either a UMS entity or a deserialized UMS entity.
+    #       We use the generic object type as static typing is impossible in
+    #       such a context.
+    # Throws:
+    #   - [FMCConversionFailureException] on conversion failure.
+    [string[]] Convert([object] $Metadata)
     {
         [string[]] $_lines = @()
 
@@ -266,24 +250,45 @@ class VorbisCommentConverter
 
                     default
                     {
-                        throw [VCCBadDocumentElementNameException]::New(
-                            $Metadata.XmlElementName)
+                        [EventLogger]::LogError($(
+                            "The document element has the following " + `
+                            "local name, which is not supported: {0}") `
+                            -f $Metadata.XmlElementName)
+                        throw [FMCConversionFailureException]::New()
                     }
                 }
             }
 
             default
             {
-                throw [VCCBadDocumentElementNamespaceException]::New(
-                    $Metadata.XmlNamespaceUri)
+                [EventLogger]::LogError($(
+                    "The document element belongs to the following " + `
+                    "namespace, which is not supported: {0}") `
+                    -f $Metadata.XmlNamespaceUri)
+                throw [FMCConversionFailureException]::New()
             }
         }
 
         return $_lines
     }
 
+    ###########################################################################
+    #   Subconverters
+    #--------------------------------------------------------------------------
+    #
+    #   Method arguments are typeless since we may work on deserialized
+    #   metadata, which do not allow static typing.
+    #
+    ###########################################################################
+
     # Converts an album track binding to Vorbis Comment.
-    [string[]] ConvertUmsAbeAlbumTrackBinding($Metadata)
+    # Parameters:
+    #   - $Metadata is either a UMS entity or a deserialized UMS entity.
+    #       We use the generic object type as static typing is impossible in
+    #       such a context.
+    # Throws:
+    #   - [FMCConversionFailureException] on conversion failure.
+    [string[]] ConvertUmsAbeAlbumTrackBinding([object] $Metadata)
     {
         [string[]] $_lines = @()
 
@@ -317,7 +322,7 @@ class VorbisCommentConverter
         catch
         {
             [EventLogger]::LogException($_.Exception)
-            throw [VCCConversionFailureException]::New()
+            throw [FMCConversionFailureException]::New()
         }
 
         return $_lines
@@ -1483,4 +1488,28 @@ class VorbisCommentConverter
 
         return $_lines
     } 
+
+    ###########################################################################
+    # Vorbis Comment handling
+    ###########################################################################
+
+    [string] CreateVorbisComment([string] $LabelId, [string] $LabelValue)
+    {
+        $_vc = ""
+        $_sanitizedValue = $LabelValue.Trim()
+
+        # We only return the comment if the label ID is known,
+        # if the label is not blank, and if the value is not empty.
+        # Else, the comment is silently discarded.
+        if (
+            ($this.VorbisLabels.ContainsKey($LabelId)) -and
+            ($this.VorbisLabels[$LabelId]) -and
+            ($_sanitizedValue))
+        {
+            
+            $_vc = $($this.VorbisLabels[$LabelId] + "=" + $_sanitizedValue)
+        }
+
+        return $_vc
+    }
 }

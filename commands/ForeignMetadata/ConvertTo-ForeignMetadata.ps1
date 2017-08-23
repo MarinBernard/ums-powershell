@@ -1,26 +1,29 @@
-function ConvertTo-VorbisComment
+function ConvertTo-ForeignMetadata
 {
     <#
     .SYNOPSIS
-    Converts UMS metadata to Vorbis Comment.
+    Converts UMS metadata to another metadata format.
     
     .DESCRIPTION
-    This command converts UMS metadata to Vorbis Comments. The conversion process is complex and can't be reverted, as the resulting metadata will not fit the original entities one for one. This command support several types of input objects, but requires UmsDocument instances describing binding documents, with a umsa:albumTrackBinding binding element.
+    This command converts UMS metadata to another metadata format. The conversion process is complex and can't be reverted, as the resulting metadata will not fit the original entities one for one. As of now, Vorbis Comment is the only supported foreign metadata format. This command accepts several types of input objects, but is only interested in a UmsDocument instance. This instance must validate all the constraints of the selected converter.
 
     .PARAMETER Uri
     A URI targeting a UMS document. The command will automatically create a UmsDocument instance from this URI before proceeding.
 
     .PARAMETER Document
-    An instance of the UmsDocument class, as returned by the Get-UmsDocument command. This document must be a binding document, with a 'umsa:albumTrackBinding' binding element.
+    An instance of the UmsDocument class, as returned by the Get-UmsDocument command.
     
     .PARAMETER File
-    An instance of the UmsFile class, as returned by the Get-UmsFile or Get-UmsManagedFile commands, with a Sidecar or Orphan cardinality and a umsa:albumTrackBinding binding element.
+    An instance of the UmsFile class, as returned by the Get-UmsFile or Get-UmsManagedFile commands.
 
     .PARAMETER Source
-    This parameters allows to select the source of UMS metadata. A 'raw' source will generate an entity tree from the main UMS document. A 'static' source will generate the same entity tree but from the static version of the UMS file, if available. A 'cache' source will use cached metadata, if available.
+    This parameters allows to select the source of UMS metadata. A 'raw' source will generate an entity tree from the main UMS document. A 'static' source will generate the same entity tree but from the static version of the UMS file, if available. A 'cache' source will use cached metadata, if available. Default is to use cached metadata.
+
+    .PARAMETER Format
+    The foreign metadata format to convert source UMS metadata into. As of now, VorbisComment is the only format supported.
 
     .EXAMPLE
-    Get-UmsFile -Path "D:\MyMusic" -Filter "track01*" | ConvertTo-VorbisComment
+    Get-UmsFile -Path "D:\MyMusic" -Filter "track01*" | ConvertTo-ForeignMetadata -Format VorbisComment
     #>
 
     [CmdletBinding(DefaultParametersetName='ByFileInstance')]
@@ -39,7 +42,11 @@ function ConvertTo-VorbisComment
 
         [Parameter(ParametersetName='ByFileInstance')]
         [ValidateSet("Cache", "Static", "Raw")]
-        [string] $Source = "Cache"
+        [string] $Source = "Cache",
+
+        [Parameter(Mandatory=$true)]
+        [ValidateSet("VorbisComment")]
+        [string] $Format
     )
 
     Begin
@@ -47,15 +54,41 @@ function ConvertTo-VorbisComment
         # Shortcut to messages
         $Messages = $ModuleStrings.Commands
 
-        # Instantiate the constraint validator
-        $Validator = [ConstraintValidator]::New(
-            [ConfigurationStore]::GetHelperItem(
-                "VorbisCommentConverter").Constraints)
+        [ConstraintValidator] $Validator = $null
+        [ForeignMetadataConverter] $Converter = $null
 
-        # Instantiate the converter
-        $Converter = [VorbisCommentConverter]::New(
-            [ConfigurationStore]::GetHelperItem(
-                "VorbisCommentConverter").Options)
+        switch ($Format)
+        {
+            "VorbisComment"
+            {
+                try
+                {
+                    # Instantiate the constraint validator
+                    $Validator = [ConstraintValidator]::New(
+                        [ConfigurationStore]::GetHelperItem(
+                            "VorbisCommentConverter").Constraints)
+
+                    # Instantiate the converter
+                    $Converter = [VorbisCommentConverter]::New(
+                        [ConfigurationStore]::GetHelperItem(
+                            "VorbisCommentConverter").Options)
+                }
+                catch
+                {
+                    [EventLogger]::LogException($_.Exception)
+                    throw [UmsPublicCommandFailureException]::(
+                        "ConvertTo-ForeignMetadata")
+                }
+            }
+
+            default
+            {
+                [EventLogger]::LogError(
+                    $Messages.UnsupportedMetadataFormat)                
+                throw [UmsPublicCommandFailureException]::(
+                    "ConvertTo-ForeignMetadata")
+            }
+        }
     }
 
     Process
@@ -77,7 +110,7 @@ function ConvertTo-VorbisComment
                     [EventLogger]::LogException($_.Exception)
                     [EventLogger]::LogError($Messages.GetDocumentByURIFailure)
                     throw [UmsPublicCommandFailureException]::New(
-                        "Get-UmsEntity")
+                        "ConvertTo-ForeignMetadata")
                 }
 
                 # Validate document constraints
@@ -91,7 +124,7 @@ function ConvertTo-VorbisComment
                     [EventLogger]::LogException($_.Exception)
                     [EventLogger]::LogError($Messages.ConstraintValidationFailure)
                     throw [UmsPublicCommandFailureException]::New(
-                        "ConvertTo-VorbisComment")
+                        "ConvertTo-ForeignMetadata")
                 }
             }
 
@@ -110,7 +143,7 @@ function ConvertTo-VorbisComment
                     [EventLogger]::LogException($_.Exception)
                     [EventLogger]::LogError($Messages.ConstraintValidationFailure)
                     throw [UmsPublicCommandFailureException]::New(
-                        "ConvertTo-VorbisComment")
+                        "ConvertTo-ForeignMetadata")
                 }
             }
 
@@ -127,7 +160,7 @@ function ConvertTo-VorbisComment
                     [EventLogger]::LogException($_.Exception)
                     [EventLogger]::LogError($Messages.ConstraintValidationFailure)
                     throw [UmsPublicCommandFailureException]::New(
-                        "ConvertTo-VorbisComment")
+                        "ConvertTo-ForeignMetadata")
                 }
 
                 # Process version
@@ -187,7 +220,7 @@ function ConvertTo-VorbisComment
                 # Entity instantiation failure.
                 [EventLogger]::LogException($_.Exception)
                 throw [UmsPublicCommandFailureException]::New(
-                    "ConvertTo-VorbisComment")
+                    "ConvertTo-ForeignMetadata")
             }
         }
         
@@ -196,20 +229,20 @@ function ConvertTo-VorbisComment
         {
             $Converter.Convert($_metadata)
         }
-        catch [VorbisCommentConverterException]
+        catch [UmsException]
         {
             # Conversion failure
             [EventLogger]::LogException($_.Exception)
             [EventLogger]::LogError($Messages.ConverterInvocationFailure)
             throw [UmsPublicCommandFailureException]::New(
-                "ConvertTo-VorbisComment")
+                "ConvertTo-ForeignMetadata")
         }
         catch
         {
             # All other exceptions are also terminating
             [EventLogger]::LogException($_.Exception)
             throw [UmsPublicCommandFailureException]::New(
-                "ConvertTo-VorbisComment")
+                "ConvertTo-ForeignMetadata")
         }        
     }
 }

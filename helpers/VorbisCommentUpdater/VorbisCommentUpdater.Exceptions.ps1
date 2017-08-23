@@ -1,38 +1,4 @@
 ###############################################################################
-#   Exception class VorbisCommentUpdaterException
-#==============================================================================
-#
-#   Parent type for all exceptions thrown by the [VorbisCommentUpdater]
-#   class.
-#
-###############################################################################
-
-class VorbisCommentUpdaterException : UmsException
-{
-    VorbisCommentUpdaterException() : base()
-    {
-        $this.MainMessage = "Vorbis Comment update has failed."
-    }
-}
-
-###############################################################################
-#   Exception class VCUConstructionFailureException
-#==============================================================================
-#
-#   Thrown by the constructor on construction failure.
-#
-###############################################################################
-
-class VCUConstructionFailureException : VorbisCommentUpdaterException
-{
-    VCUConstructionFailureException() : base()
-    {
-        $this.MainMessage = (
-            "The constructor encountered a fatal failure.")
-    }
-}
-
-###############################################################################
 #   Exception class VCUMetaflacInvocationFailureException
 #==============================================================================
 #
@@ -40,7 +6,7 @@ class VCUConstructionFailureException : VorbisCommentUpdaterException
 #
 ###############################################################################
 
-class VCUMetaflacInvocationFailureException : VorbisCommentUpdaterException
+class VCUMetaflacInvocationFailureException : ForeignMetadataUpdaterException
 {
     VCUMetaflacInvocationFailureException([string] $MetaflacOutput) : base()
     {

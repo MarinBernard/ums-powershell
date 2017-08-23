@@ -6,7 +6,13 @@
 . "$PSScriptRoot\helpers\EventLogger\EventLogger.ps1"
 
 # Base class for all exceptions (Needed by all classes and helpers)
-. "$PSScriptRoot\helpers\UmsException.ps1"
+. "$PSScriptRoot\helpers\Exceptions.ps1"
+
+# Abstract helpers
+. "$PSScriptRoot\helpers\abstract\ForeignMetadataConverter.Exceptions.ps1"
+. "$PSScriptRoot\helpers\abstract\ForeignMetadataConverter.ps1"
+. "$PSScriptRoot\helpers\abstract\ForeignMetadataUpdater.Exceptions.ps1"
+. "$PSScriptRoot\helpers\abstract\ForeignMetadataUpdater.ps1"
 
 # Configuration store (Needed by all classes and helpers)
 . "$PSScriptRoot\helpers\ConfigurationStore\ConfigurationStore.Exceptions.ps1"
@@ -53,9 +59,11 @@
 . "$PSScriptRoot\helpers\EntityFactory\EntityFactory.Exceptions.ps1"
 . "$PSScriptRoot\helpers\EntityFactory\EntityFactory.ps1"
 
-# VorbisComment helpers
+# Vorbis Comment converter helper
 . "$PSScriptRoot\helpers\VorbisCommentConverter\VorbisCommentConverter.Exceptions.ps1"
 . "$PSScriptRoot\helpers\VorbisCommentConverter\VorbisCommentConverter.ps1"
+
+# Vorbis Comment updater helper
 . "$PSScriptRoot\helpers\VorbisCommentUpdater\VorbisCommentUpdater.Exceptions.ps1"
 . "$PSScriptRoot\helpers\VorbisCommentUpdater\VorbisCommentUpdater.ps1"
 
@@ -137,6 +145,10 @@
 # Command exceptions
 . "$PSScriptRoot\commands\Commands.Exceptions.ps1"
 
+# *-ForeignMetadata
+. "$PSScriptRoot\commands\ForeignMetadata\ConvertTo-ForeignMetadata.ps1"
+. "$PSScriptRoot\commands\ForeignMetadata\Update-ForeignMetadata.ps1"
+
 # *-UmsCachedDocument
 . "$PSScriptRoot\commands\CachedDocument\Get-UmsCachedDocument.ps1"
 . "$PSScriptRoot\commands\CachedDocument\Remove-UmsCachedDocument.ps1"
@@ -175,7 +187,3 @@
 . "$PSScriptRoot\commands\ManagedFile\Remove-UmsManagedFile.ps1"
 . "$PSScriptRoot\commands\ManagedFile\Rename-UmsManagedFile.ps1"
 . "$PSScriptRoot\commands\ManagedFile\Update-UmsManagedFile.ps1"
-
-# *-VorbisComment
-. "$PSScriptRoot\commands\VorbisComment\ConvertTo-VorbisComment.ps1"
-. "$PSScriptRoot\commands\VorbisComment\Update-VorbisComment.ps1"

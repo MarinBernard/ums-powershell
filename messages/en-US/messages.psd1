@@ -25,5 +25,6 @@
         RunCommandAdvice = "Run the {0} command to obtain more information."
         StaticVersionUpdateFailure = "The static version update has failed."
         StaticVersionUpToDate = "The static version is already up-to-date."
+        UnsupportedMetadataFormat = "The metadata format is not supported."
     }
 }

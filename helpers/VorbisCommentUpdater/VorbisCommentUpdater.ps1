@@ -7,7 +7,7 @@
 #
 ###############################################################################
 
-class VorbisCommentUpdater
+class VorbisCommentUpdater : ForeignMetadataUpdater
 {
     ###########################################################################
     # Static properties
@@ -39,8 +39,8 @@ class VorbisCommentUpdater
 
     # Initializes options at first use.
     # Throws:
-    #   - [VCUConstructionFailureException] when a fatal error is met.
-    VorbisCommentUpdater([object[]] $Options)
+    #   - [FMUConstructionFailureException] when a fatal error is met.
+    VorbisCommentUpdater([object[]] $Options) : base()
     {
         [EventLogger]::LogVerbose(
             "Beginning VorbisCommentUpdater instantiation.")
@@ -60,7 +60,7 @@ class VorbisCommentUpdater
                 [EventLogger]::LogError(
                     "Mandatory option '{0}' is missing." `
                     -f $_mandatoryOption)
-                throw [VCUConstructionFailureException]::New()
+                throw [FMUConstructionFailureException]::New()
             }
         }
     }
@@ -94,98 +94,167 @@ class VorbisCommentUpdater
     }
 
     ###########################################################################
-    # API
+    # Concrete implementations of [ForeignMetadataUpdater] abstract methods
     ###########################################################################
 
-    # Updates Vorbis Comments embedded within the specified file.
+    # Returns a FileInfo reference to a tag file from a UMS file.
+    # Implements an abstract method from the [ForeignMetadataUpdater] class.
+    # Parameters:
+    #   - $File is a UMS file with Sidecar cardinality.
     # Throws:
-    #   - [System.IO.FileNotFoundException] if the file does not exist.
-    #   - [VCUMetaflacInvocationFailureException] on metaflac invocation
-    #       failure
-    UpdateFile([System.IO.FileInfo] $File, [string[]] $VorbisComments)
+    #   - [FMUGetExternalVersionFileException] on failure.
+    [System.IO.FileInfo] GetExternalVersionFile([UmsFile] $File)
     {
-        [EventLogger]::LogVerbose(
-            "Beginning the update of {0} embedded Vorbis Comments." `
-            -f $VorbisComments.Count)
-
-        # Halt here if the target file does not exist.
-        if (-not $File.Exists)
-        {
-            throw [System.IO.FileNotFoundException]
-        }
-
-        # Build the name of the tag file
         [System.IO.FileInfo] $_tagFile = $null
-        if ($this.PersistTagFiles)
-        {
-            # If persistence is enabled, we use the same base name
-            # as the target audio file.
-            $_tagFile = $($File.FullName + $this.TagFileExtension)
-        }
-        else
-        {
-            # Else, we try to use a temporary file.
-            try
-            {
-                $_tagFile = New-TemporaryFile
-            }
-            catch
-            {
-                [EventLogger]::LogException($_.Exception)
-                [EventLogger]::LogError("Unable to acquire a temporary file.")
-                throw $_.Exception
-            }
-        }
-        [EventLogger]::LogVerbose(
-            "Built tag file name: {0}" -f $_tagFile.FullName)
 
-        # Export the tags into the tagfile
-        [EventLogger]::LogVerbose("Exporting Vorbis Comments to the tag file.")
         try
         {
-            # We use a .Net method as PS does not support UTF8 without BOM
-            [IO.File]::WriteAllLines(
-                $_tagFile.FullName,
-                ($VorbisComments -join([System.Environment]::NewLine)))             
+            $_tagFile = $($File.ContentFile.FullName + $this.TagFileExtension)
         }
         catch
         {
             [EventLogger]::LogException($_.Exception)
-            [EventLogger]::LogError(
-                "Unable to write Vorbis Comments to the tag file.")
-
-            # Remove the tag file, if needed
-            if (-not $this.PersistTagFiles)
-            {
-                Remove-Item `
-                -Force `
-                -Path $_tagFile.FullName `
-                -ErrorAction "SilentlyContinue"
-            }
-
-            # Proxify the exception
-            throw $_.Exception
+            throw [FMUGetExternalVersionFileException]::New($File.File)
         }
+
+        [EventLogger]::LogVerbose(
+            "Built tag file name: {0}" -f $_tagFile.FullName)
+
+        return $_tagFile
+    }
+
+    # Updates Vorbis Comment metadata embedded within the specified audio file.
+    # Implements an abstract method from the [ForeignMetadataUpdater] class.
+    # Parameters:
+    #   - $File is a UMS file with Sidecar cardinality.
+    #   - $Statements is an array of Vorbis Comments, as returned by the
+    #       VorbisCommentConverter class.
+    # Throws:
+    #   - [System.IO.FileNotFoundException] if the file does not exist.
+    #   - [FMUEmbeddedVersionUpdateException] on update failure.
+    [void] UpdateEmbeddedVersion(
+        [UmsFile] $File,
+        [string[]] $Statements)
+    {
+        [EventLogger]::LogVerbose($(
+            "Request to update embedded Vorbis Comment metadata in the " + `
+            "content file of the following UMS file: {0}") -f $File.FullName)
         
-        # Build the argument list for metaflac
-        [string[]] $_argumentList = @()
-        # Remove all tags if the option is set
-        if ($this.RemoveAllComments){ $_argumentList += "--remove-all-tags" }
-        # Prevent UTF8 conversion, as our file is already in the good encoding. 
-        $_argumentList += "--no-utf8-convert"
-        # Name of the tag file storing Vorbis Comments
-        $_argumentList += ("--import-tags-from=`"{0}`"" -f $_tagFile.FullName)
-        # Name of the target FLAC file
-        $_argumentList += $File.FullName
-        
-        # Invoke metaflac
+        # Check whether content file exist
+        if (-not $File.ContentFile.Exists)
+        {
+            throw [System.IO.FileNotFoundException]::New(
+                "The content file does not exist: {0}" `
+                -f $File.ContentFile.FullName)
+        }
+
+        [EventLogger]::LogVerbose($(
+            "Beginning to update embedded Vorbis Comment metadata in the " + `
+            "following audio file: {0}") -f $File.ContentFile.FullName)
+
+        [System.IO.FileInfo] $_temporaryFile = $null
+        try
+        {
+            # Get a temporary file to store Vorbis Comment statements
+            $_temporaryFile = New-TemporaryFile
+
+            # Export Vorbis Comment statements to the temporary file.
+            $this.WriteTagFile($_temporaryFile, $Statements)  
+
+            # Build the argument list for metaflac
+            [string[]] $_argumentList = @()
+            # Remove all tags if the option is set
+            if ($this.RemoveAllComments)
+                { $_argumentList += "--remove-all-tags" }
+            # Prevent UTF8 re-conversion, which corrupts read data
+            $_argumentList += "--no-utf8-convert"
+            # Name of the tag file storing Vorbis Comments
+            $_argumentList += ("--import-tags-from=`"{0}`"" `
+                -f $_temporaryFile.FullName)
+            # Name of the target FLAC file
+            $_argumentList += $File.ContentFile.FullName
+
+            # Invoke metaflac
+            $this.InvokeMetaflac($_argumentList)
+        }
+
+        catch
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMUEmbeddedVersionUpdateException]::new(
+                $File.ContentFile.FullName)
+        }
+
+        finally
+        {
+            # Remove the temporary file
+            Remove-Item `
+                -Force `
+                -Path $_temporaryFile.FullName `
+                -ErrorAction "SilentlyContinue"
+        }
+
+        [EventLogger]::LogVerbose($(
+            "Finished to update embedded Vorbis Comment metadata in " + `
+            "the following audio file: {0}") -f $File.ContentFile.FullName)
+    }
+
+    # Writes a set of Vorbis Comment statements to an external file.
+    # Implements an abstract method from the [ForeignMetadataUpdater] class.
+    # Parameters:
+    #   - $File is a UMS file with Sidecar cardinality.
+    #   - $Statements is an array of Vorbis Comments, as returned by the
+    #       VorbisCommentConverter class.
+    # Throws:
+    #   - [FMUExternalVersionUpdateException] on write failure.
+    [void] UpdateExternalVersion([UmsFile] $File, [string[]] $Statements)
+    {
+        [EventLogger]::LogVerbose($(
+            "Beginning to update the external version of Vorbis Comment " + `
+            "metadata for the following UMS file: {0}") -f $File.FullName)
+
+        try
+        {
+            # Get the name of the external tag file
+            $_externalFile = $this.GetExternalVersionFile($File)
+
+            [EventLogger]::LogVerbose($(
+                "Exporting {0} Vorbis Comment statements to the following " + `
+                "external version file: {1}") `
+                -f @($Statements.Count, $_externalFile.FullName))
+
+            # Write the file
+            $this.WriteTagFile($_externalFile, $Statements)            
+        }
+        catch
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMUExternalVersionUpdateException]::New($File.File)
+        }
+
+        [EventLogger]::LogVerbose($(
+            "Wrote {0} Vorbis Comment statements to the following " + `
+            "external version file: {1}") `
+            -f @($Statements.Count, $_externalFile.FullName))
+    }
+
+    ###########################################################################
+    # Helpers
+    ###########################################################################
+
+    # Invoke metaflac with the specified arguments.
+    # Throws:
+    #   - [VCUMetaflacInvocationFailureException] on invocation failure.
+    [void] InvokeMetaflac([string[]] $Arguments)
+    {
         [EventLogger]::LogVerbose("Metaflac invocation string: {0} {1}" `
-            -f @($this.PathToMetaflac, ($_argumentList -join(" "))))
+            -f @($this.PathToMetaflac, ($Arguments -join(" "))))
+
         [int] $_exitCode = $null
         [string] $_output = $null
         try
         {
-            $_output = & $this.PathToMetaflac $_argumentList *>&1
+            $_output = & $this.PathToMetaflac $Arguments *>&1
             $_exitCode = $LASTEXITCODE
             [EventLogger]::LogVerbose("Metaflac output: {0}" -f $_output)
         }
@@ -194,17 +263,6 @@ class VorbisCommentUpdater
             [EventLogger]::LogException($_.Exception)
             throw [VCUMetaflacInvocationFailureException]::New($_output)
         }
-        finally
-        {
-            # Remove the tag file, if needed
-            if (-not $this.PersistTagFiles)
-            {
-                Remove-Item `
-                -Force `
-                -Path $_tagFile.FullName `
-                -ErrorAction "SilentlyContinue"
-            }
-        }
 
         # Check exit code
         if ($_exitCode -gt 0)
@@ -212,6 +270,30 @@ class VorbisCommentUpdater
             [EventLogger]::LogError("Metaflac exit code: {0}" `
                 -f $_exitCode.ToString())
             throw [VCUMetaflacInvocationFailureException]::New($_output)
+        }
+    }
+
+    # Write a set of Vorbis Comment statements to a tag file.
+    # Throws:
+    #   - [System.IO.IOException] on write failure.
+    [void] WriteTagFile([System.IO.FileInfo] $File, [string[]] $Statements)
+    {
+        [EventLogger]::LogVerbose($(
+            "Writing {0} Vorbis Comment statements to the following " + `
+            "tag file: {1}") `
+            -f @($Statements.Count, $File.FullName))
+
+        try
+        {
+            # We use a .Net method as PS does not support UTF8 without BOM
+            [IO.File]::WriteAllLines(
+                $File.FullName,
+                ($Statements -join([System.Environment]::NewLine)))             
+        }
+        catch [System.IO.IOException]
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw $_.Exception
         }
     }
 }

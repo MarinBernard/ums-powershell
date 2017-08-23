@@ -30,6 +30,10 @@ $global:ModuleStrings = (
 # Exports
 ###############################################################################
 
+# *-ForeignMetadata
+Export-ModuleMember -Function ConvertTo-ForeignMetadata
+Export-ModuleMember -Function Update-ForeignMetadata
+
 # *-UmsCachedDocument
 Export-ModuleMember -Function Get-UmsCachedDocument
 Export-ModuleMember -Function Remove-UmsCachedDocument
@@ -68,7 +72,3 @@ Export-ModuleMember -Function Get-UmsManagedFile
 Export-ModuleMember -Function Remove-UmsManagedFile
 Export-ModuleMember -Function Rename-UmsManagedFile
 Export-ModuleMember -Function Update-UmsManagedFile
-
-# *-VorbisComment
-Export-ModuleMember -Function ConvertTo-VorbisComment
-Export-ModuleMember -Function Update-VorbisComment
