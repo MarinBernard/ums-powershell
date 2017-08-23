@@ -143,7 +143,7 @@
 ###############################################################################
 
 # Command exceptions
-. "$PSScriptRoot\commands\Commands.Exceptions.ps1"
+. "$PSScriptRoot\commands\Exceptions.ps1"
 
 # *-ForeignMetadata
 . "$PSScriptRoot\commands\ForeignMetadata\ConvertTo-ForeignMetadata.ps1"
