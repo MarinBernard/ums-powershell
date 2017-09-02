@@ -76,6 +76,7 @@
 . "$PSScriptRoot\entities\base\UmsBaeVariant.ps1"
 . "$PSScriptRoot\entities\base\UmsBceLabelVariant.ps1"
 . "$PSScriptRoot\entities\base\UmsBceLinkVariant.ps1"
+. "$PSScriptRoot\entities\base\UmsBcePictureVariant.ps1"
 . "$PSScriptRoot\entities\base\UmsBceNameVariant.ps1"
 . "$PSScriptRoot\entities\base\UmsBceSymbolVariant.ps1"
 . "$PSScriptRoot\entities\base\UmsBceTitleVariant.ps1"

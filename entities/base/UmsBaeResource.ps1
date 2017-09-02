@@ -29,6 +29,9 @@ class UmsBaeResource : UmsAeEntity
     # Collection of all link variants
     hidden [UmsBceLinkVariant[]] $LinkVariants
 
+    # Collection of all picture variants
+    hidden [UmsBcePictureVariant[]] $PictureVariants
+
     # Collection of standard Ids
     # The type of the items in the collection is always UmsBceStandardId, but
     # could not be specified as-is due to a dependency loop.
@@ -42,6 +45,9 @@ class UmsBaeResource : UmsAeEntity
 
     # Elected link variants
     [UmsBceLinkVariant[]] $Links
+
+    # Elected picture variants
+    [UmsBcePictureVariant[]] $Pictures
 
     ###########################################################################
     # Constructors
@@ -62,6 +68,11 @@ class UmsBaeResource : UmsAeEntity
         $this.BuildLinkVariants(
             $this.GetZeroOrOneXmlElement(
                 $XmlElement, [UmsAeEntity]::NamespaceUri.Base, "linkVariants"))
+
+        # Build optional picture variants
+        $this.BuildPictureVariants(
+            $this.GetZeroOrOneXmlElement(
+                $XmlElement, [UmsAeEntity]::NamespaceUri.Base, "pictureVariants"))
 
         # Build optional standard ids
         $this.BuildStandardIds(
@@ -88,6 +99,27 @@ class UmsBaeResource : UmsAeEntity
             $this.Links += [UmsBaeVariant]::GetBestVariant($_group.Group)
         }
     }
+
+    # Builds instances of all picture variants and elects those which fit
+    # the best language.
+    [void] BuildPictureVariants(
+        [System.Xml.XmlElement] $PictureVariantsElement)
+    {
+        $this.GetZeroOrManyXmlElement(
+            $PictureVariantsElement,
+            [UmsAeEntity]::NamespaceUri.Base,
+            "pictureVariant"
+        ) | foreach {
+                $this.PictureVariants += [EntityFactory]::GetEntity(
+                    $_, $this.SourcePathUri, $this.SourceFileUri) }
+
+        # Select the best picture variant for each resource type
+        $_groups = $this.PictureVariants | Group-Object -Property PictureType
+        foreach ($_group in $_groups)
+        {
+            $this.Pictures += [UmsBaeVariant]::GetBestVariant($_group.Group)
+        }
+    }    
 
     # Builds instances of all standard ids.
     [void] BuildStandardIds([System.Xml.XmlElement] $StandardIdsElement)

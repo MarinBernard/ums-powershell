@@ -50,12 +50,10 @@ class EntityFactory
         [EventLogger]::LogVerbose(
             "Began processing document with URI: {0}" -f $Document.SourceUri.AbsoluteUri)
         
-        # Build source path URI (hacky but works)
-        $_sourcePathUri = [System.Uri]::New(
-            $Document.SourceUri.AbsoluteUri.Substring(
-                0,
-                $Document.SourceUri.AbsoluteUri.Length - $Document.SourceUri.Segments[-1].Length
-            )).AbsoluteUri
+        # Get source path URI
+        $_sourcePathUri = (
+            [EntityFactory]::GetParentContainerUri(
+                $Document.SourceUri).AbsoluteUri)
         
         [EventLogger]::LogVerbose(
             "Built source path URI: {0}" -f $_sourcePathUri)
@@ -471,6 +469,9 @@ class EntityFactory
                     "nameVariant"
                         { return New-Object -Type UmsBceNameVariant(
                             $XmlElement, $Uri) }
+                    "pictureVariant"
+                        { return New-Object -Type UmsBcePictureVariant(
+                            $XmlElement, $Uri) }
                     "place"
                         { return New-Object -Type UmsBcePlace(
                             $XmlElement, $Uri) }
@@ -712,6 +713,17 @@ class EntityFactory
         }
 
         return $_list
+    }
+
+    # Returns the URI to the parent container of a leaf element URI
+    static [System.Uri] GetParentContainerUri([System.Uri] $Uri)
+    {
+        # Build source path URI (hacky but works)
+        return [System.Uri]::New(
+            $Uri.AbsoluteUri.Substring(
+                0,
+                $Uri.AbsoluteUri.Length - $Uri.Segments[-1].Length
+            ))
     }
 }
 

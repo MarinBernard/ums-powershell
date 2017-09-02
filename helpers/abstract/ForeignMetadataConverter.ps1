@@ -44,13 +44,14 @@ class ForeignMetadataConverter
     # Abstract methods
     ###########################################################################
 
-    # Prototype for converting a UMS entity to foreign metadata.
+    # Prototype for converting a UMS entity to foreign metadata. Return type is
+    # a generic array of objects.
     # Parameters:
     #   - $Metadata is either a UMS entity or a deserialized UMS entity.
     #       We use the generic object type as static typing is impossible in
     #       such a context.
     # Throws [AbstractMethodCallException] if not overriden.
-    [string[]] Convert([object] $Metadata)
+    [object[]] Convert([object] $Metadata)
     {
         throw [AbstractMethodCallException]::New(
             $this.getType().Name,
