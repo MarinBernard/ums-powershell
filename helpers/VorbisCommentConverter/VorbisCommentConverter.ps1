@@ -321,6 +321,9 @@ class VorbisCommentConverter : ForeignMetadataConverter
             $_comments += $this.RenderWork($_track)
 
             # Build references to album pictures
+            $_pictures += $this.ExtractAlbumPictures($_album)
+            $_pictures += $this.ExtractMovementPictures($_track.Movements)
+            $_pictures += $this.ExtractPerformancePictures($_track.Performance)
             $_pictures += $this.ExtractWorkPictures($_track.Piece.Work)
         }
 
@@ -341,6 +344,10 @@ class VorbisCommentConverter : ForeignMetadataConverter
     ###########################################################################
 
     # Creates a single album picture as a PSCustomObject
+    # Parameters:
+    #   - $Type is the type of the picture in the Vorbis Comment specification.
+    #   - $Description is a description of the picture.
+    #   - $Uri is a URI to the picture.
     [PSCustomObject] CreateAlbumPicture(
         [VorbisCommentPictureType] $Type,
         [string] $Description,
@@ -1544,13 +1551,164 @@ class VorbisCommentConverter : ForeignMetadataConverter
     #
     ###########################################################################
 
+    # Extracts pictures related to an audio album, such as front and back
+    # covers, leaflet pages and media pictures.
+    [PSCustomObject[]] ExtractAlbumPictures($AlbumMetadata)
+    {
+        [PSCustomObject[]] $_pictures = @()
+
+        foreach( $_picture in $AlbumMetadata.Pictures)
+        {
+            switch ($_picture.PictureType)
+            {
+                "back-cover"
+                {
+                    $_pictures += $this.CreateAlbumPicture(
+                        [VorbisCommentPictureType]::BackCover,
+                        "Back cover",
+                        $_picture.Uri.AbsoluteUri)
+                }
+
+                "front-cover"
+                {
+                    $_pictures += $this.CreateAlbumPicture(
+                        [VorbisCommentPictureType]::FrontCover,
+                        "Front cover",
+                        $_picture.Uri.AbsoluteUri)
+                }
+
+                "leaflet-page"
+                {
+                    $_pictures += $this.CreateAlbumPicture(
+                        [VorbisCommentPictureType]::LeafletPage,
+                        "Leaflet page",
+                        $_picture.Uri.AbsoluteUri)
+                }
+
+                "media"
+                {
+                    $_pictures += $this.CreateAlbumPicture(
+                        [VorbisCommentPictureType]::Media,
+                        "Media",
+                        $_picture.Uri.AbsoluteUri)
+                }
+            }
+        }
+
+        return $_pictures
+    }
+
+    # Extracts pictures related to a music movement, such as pictures of
+    # lyricists.
+    [PSCustomObject[]] ExtractMovementPictures($MovementMetadata)
+    {
+        [PSCustomObject[]] $_pictures = @()
+
+        foreach( $_movement in $MovementMetadata)
+        {
+            foreach ($_lyricist in $_movement.lyricists)
+            {
+                $_validPictureTypes = @("portrait")
+
+                foreach ($_picture in $_lyricist.Pictures)
+                {
+                    if ($_validPictureTypes -contains($_picture.PictureType))
+                    {
+                        $_pictures += $this.CreateAlbumPicture(
+                            [VorbisCommentPictureType]::Lyricist,
+                            $_lyricist.ToString(),
+                            $_picture.Uri.AbsoluteUri)
+                    }
+                }
+            }
+        }
+
+        return $_pictures
+    }
+
+    # Extracts pictures related to a music performance, such as pictures of
+    # music ensembles or performers.
+    [PSCustomObject[]] ExtractPerformancePictures($PerformanceMetadata)
+    {
+        [PSCustomObject[]] $_pictures = @()
+
+        # Conductors
+        foreach ($_conductor in $PerformanceMetadata.conductors)
+        {
+            $_validPictureTypes = @("portrait")
+            
+            foreach ($_picture in $_conductor.Pictures)
+            {
+                if ($_validPictureTypes -contains($_picture.PictureType))
+                {
+                    $_pictures += $this.CreateAlbumPicture(
+                        [VorbisCommentPictureType]::Conductor,
+                        $_conductor.ToString(),
+                        $_picture.Uri.AbsoluteUri)
+                }
+            }
+        }
+
+        # Performers
+        foreach ($_performer in $PerformanceMetadata.performers)
+        {
+            # Ensembles
+            if ($_performer.Ensemble)
+            {
+                $_validPictureTypes = @("group-photo")
+
+                foreach ($_picture in $_performer.Ensemble.Pictures)
+                {
+                    if ($_validPictureTypes -contains($_picture.PictureType))
+                    {
+                        $_pictures += $this.CreateAlbumPicture(
+                            [VorbisCommentPictureType]::LeadArtist,
+                            $_performer.ToString(),
+                            $_picture.Uri.AbsoluteUri)
+                        
+                        $_pictures += $this.CreateAlbumPicture(
+                            [VorbisCommentPictureType]::Ensemble,
+                            $_performer.ToString(),
+                            $_picture.Uri.AbsoluteUri)
+                    }
+                }
+            }
+
+            # Instrumentalists
+            elseif ($_performer.Instrumentalist)
+            {
+                $_validPictureTypes = @("portrait")
+
+                foreach ($_picture in $_performer.Instrumentalist.Pictures)
+                {
+                    if ($_validPictureTypes -contains($_picture.PictureType))
+                    {
+                        $_pictures += $this.CreateAlbumPicture(
+                            [VorbisCommentPictureType]::LeadArtist,
+                            $_performer.ToString(),
+                            $_picture.Uri.AbsoluteUri)
+
+                        $_pictures += $this.CreateAlbumPicture(
+                            [VorbisCommentPictureType]::Artist,
+                            $_performer.ToString(),
+                            $_picture.Uri.AbsoluteUri)
+                    }
+                }
+            }
+        }
+
+        return $_pictures
+    }
+
+    # Extracts pictures related to a music work, such as pictures of composers.
     [PSCustomObject[]] ExtractWorkPictures($WorkMetadata)
     {
         [PSCustomObject[]] $_pictures = @()
-        $_validPictureTypes = @("portrait")
 
         foreach ($_composer in $WorkMetadata.composers)
         {
+            $_validPictureTypes = @("portrait")
+
             foreach ($_picture in $_composer.Pictures)
             {
                 if ($_validPictureTypes -contains($_picture.PictureType))
