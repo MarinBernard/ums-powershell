@@ -56,7 +56,7 @@ class ForeignMetadataUpdater
 
     # Prototype for updating the embedded version of foreign metadata.
     # Throws [AbstractMethodCallException] if not overriden.
-    [void] UpdateEmbeddedVersion([object] $Target, [object] $Metadata)
+    [void] UpdateEmbeddedVersion([object] $Target)
     {
         throw [AbstractMethodCallException]::New(
             $this.getType().Name,
@@ -65,7 +65,7 @@ class ForeignMetadataUpdater
 
     # Prototype for updating the external version of foreign metadata.
     # Throws [AbstractMethodCallException] if not overriden.
-    [void] UpdateExternalVersion([object] $Target, [object] $Metadata)
+    [void] UpdateExternalVersion([object] $Target)
     {
         throw [AbstractMethodCallException]::New(
             $this.getType().Name,

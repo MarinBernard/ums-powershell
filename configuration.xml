@@ -152,7 +152,6 @@
 			<options>
 				<option id="path-to-metaflac">C:\Program Files\Flac\metaflac.exe</option>
 				<option id="remove-all-comments">True</option>
-				<option id="tag-file-persist">True</option>
 				<option id="tag-file-extension">.tags</option>
 			</options>
 		</helper>

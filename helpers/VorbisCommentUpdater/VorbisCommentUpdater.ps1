@@ -23,15 +23,16 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     # Whether all Vorbis Comments are removed before adding new ones
     hidden [bool] $RemoveAllComments
 
-    # Whether tag files must be kept on the disk.
-    hidden [bool] $PersistTagFiles
-
     # The extension of Vorbis Comment tag files, including the dot.
     hidden [string] $TagFileExtension
 
     ###########################################################################
     # Visible properties
     ###########################################################################
+
+    # The set of Vorbis Comment statements which will be embedded into the
+    # destination file.
+    [string[]] $VorbisCommentList
 
     ###########################################################################
     # Constructors
@@ -71,7 +72,7 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
 
     # Set an option to the specified value.
     # Throws nothing.
-    SetOption([string] $Name, $Value)
+    [void] SetOption([string] $Name, $Value)
     {
         [EventLogger]::LogVerbose(
             "Processing option '{0}' with value '{1}'." `
@@ -82,7 +83,6 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
             "RemoveAllComments" { $this.RemoveAllComments = $Value }
             "PathToMetaflac"    { $this.PathToMetaflac = $Value }
             "TagFileExtension"  { $this.TagFileExtension = $Value }
-            "TagFilePersist"    { $this.PersistTagFiles = $Value }
 
             default
             {
@@ -91,6 +91,16 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
                     -f @($Name, $Value))
             }
         }
+    }
+
+    ###########################################################################
+    # Metadata setters
+    ###########################################################################
+
+    # Adds one of several Vorbis Comment statements to the updater queue.
+    [void] AddVorbisComment([string[]] $Statements)
+    {
+        $this.VorbisCommentList += $Statements
     }
 
     ###########################################################################
@@ -127,14 +137,10 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     # Implements an abstract method from the [ForeignMetadataUpdater] class.
     # Parameters:
     #   - $File is a UMS file with Sidecar cardinality.
-    #   - $Statements is an array of Vorbis Comments, as returned by the
-    #       VorbisCommentConverter class.
     # Throws:
     #   - [System.IO.FileNotFoundException] if the file does not exist.
     #   - [FMUEmbeddedVersionUpdateException] on update failure.
-    [void] UpdateEmbeddedVersion(
-        [UmsFile] $File,
-        [string[]] $Statements)
+    [void] UpdateEmbeddedVersion([UmsFile] $File)
     {
         [EventLogger]::LogVerbose($(
             "Request to update embedded Vorbis Comment metadata in the " + `
@@ -159,7 +165,7 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
             $_temporaryFile = New-TemporaryFile
 
             # Export Vorbis Comment statements to the temporary file.
-            $this.WriteTagFile($_temporaryFile, $Statements)  
+            $this.WriteTagFile($_temporaryFile, $this.VorbisCommentList)  
 
             # Build the argument list for metaflac
             [string[]] $_argumentList = @()
@@ -203,11 +209,9 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     # Implements an abstract method from the [ForeignMetadataUpdater] class.
     # Parameters:
     #   - $File is a UMS file with Sidecar cardinality.
-    #   - $Statements is an array of Vorbis Comments, as returned by the
-    #       VorbisCommentConverter class.
     # Throws:
     #   - [FMUExternalVersionUpdateException] on write failure.
-    [void] UpdateExternalVersion([UmsFile] $File, [string[]] $Statements)
+    [void] UpdateExternalVersion([UmsFile] $File)
     {
         [EventLogger]::LogVerbose($(
             "Beginning to update the external version of Vorbis Comment " + `
@@ -221,10 +225,10 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
             [EventLogger]::LogVerbose($(
                 "Exporting {0} Vorbis Comment statements to the following " + `
                 "external version file: {1}") `
-                -f @($Statements.Count, $_externalFile.FullName))
+                -f @($this.VorbisCommentList.Count, $_externalFile.FullName))
 
             # Write the file
-            $this.WriteTagFile($_externalFile, $Statements)            
+            $this.WriteTagFile($_externalFile, $this.VorbisCommentList)            
         }
         catch
         {
@@ -235,7 +239,7 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
         [EventLogger]::LogVerbose($(
             "Wrote {0} Vorbis Comment statements to the following " + `
             "external version file: {1}") `
-            -f @($Statements.Count, $_externalFile.FullName))
+            -f @($this.VorbisCommentList.Count, $_externalFile.FullName))
     }
 
     ###########################################################################

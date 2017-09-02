@@ -115,6 +115,9 @@ function Update-ForeignMetadata
             [EventLogger]::LogException($_.Exception)
             return
         }
+
+        # Register Vorbis Comment statements
+        $Updater.AddVorbisComment($_comments)
         
         # Update external version
         if (@("All", "External") -contains $Version)
@@ -122,7 +125,7 @@ function Update-ForeignMetadata
             [EventLogger]::LogVerbose("Invoking external version update.")
             try
             {
-                $Updater.UpdateExternalVersion($File, $_comments)
+                $Updater.UpdateExternalVersion($File)
             }
             catch
             {
@@ -137,7 +140,7 @@ function Update-ForeignMetadata
             [EventLogger]::LogVerbose("Invoking embedded version update.")
             try
             {
-                $Updater.UpdateEmbeddedVersion($File, $_comments)
+                $Updater.UpdateEmbeddedVersion($File)
             }
             catch
             {
