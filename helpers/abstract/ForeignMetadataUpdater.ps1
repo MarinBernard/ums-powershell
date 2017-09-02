@@ -44,6 +44,15 @@ class ForeignMetadataUpdater
     # Abstract methods
     ###########################################################################
 
+    # Prototype for adding metadata to the internal buffer of the updater.
+    # Throws [AbstractMethodCallException] if not overriden.
+    [void] AddMetadata([object[]] $Metadata)
+    {
+        throw [AbstractMethodCallException]::New(
+            $this.getType().Name,
+            "AddMetadata")
+    }
+
     # Prototype for getting a reference to the file containing the external
     # version of foreign metadata.
     # Throws [AbstractMethodCallException] if not overriden.

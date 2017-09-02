@@ -102,10 +102,10 @@ function Update-ForeignMetadata
         # Try metadata conversion
         # Tags:
         #   - PublicCommandInvocation
-        [string[]] $_comments = $null
+        [PSCustomObject[]] $_foreignMetadata = $null
         try
         {
-            $_comments = ConvertTo-ForeignMetadata `
+            $_foreignMetadata = ConvertTo-ForeignMetadata `
                 -Format $Format `
                 -File $File `
                 -Source $Source
@@ -116,8 +116,8 @@ function Update-ForeignMetadata
             return
         }
 
-        # Register Vorbis Comment statements
-        $Updater.AddVorbisComment($_comments)
+        # Store foreign metadata into the updater
+        $Updater.AddMetadata($_foreignMetadata)
         
         # Update external version
         if (@("All", "External") -contains $Version)

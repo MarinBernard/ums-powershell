@@ -31,7 +31,7 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     ###########################################################################
 
     # The set of pictures which will be embedded into the destination file.
-    [hashtable[]] $PictureList
+    [PSCustomObject[]] $PictureList
 
     # The set of Vorbis Comment statements which will be embedded into the
     # destination file.
@@ -100,25 +100,10 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     # Metadata setters
     ###########################################################################
 
-    # Proxy to AddPicture(3) for pictures without a description
-    [void] AddPicture(
-        [VorbisCommentPictureType] $Type,
-        [System.IO.FileInfo] $PictureFile)
+    # Adds one or several album pictures to the updater queue.
+    [void] AddPicture([PSCustomObject[]] $Pictures)
     {
-        $this.AddPicture($Type, $PictureFile, "")
-    }
-
-    # Adds a reference to a single album picture to the updater queue.
-    [void] AddPicture(
-        [VorbisCommentPictureType] $Type,
-        [System.IO.FileInfo] $PictureFile,
-        [string] $Description)
-    {
-        $this.PictureList += @{
-            Type = $Type
-            Description = $Description
-            File = $PictureFile
-        }
+        $this.PictureList += $Pictures
     }
 
     # Adds one or several Vorbis Comment statements to the updater queue.
@@ -130,6 +115,36 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     ###########################################################################
     # Concrete implementations of [ForeignMetadataUpdater] abstract methods
     ###########################################################################
+
+    # Adds Vorbis Comment statements or album pictures to the updater instance.
+    # Implements an abstract method from the [ForeignMetadataUpdater] class.
+    # Parameters:
+    #   - $Metadata is a collection of PSCustomObject built by a converter.
+    # Throws:
+    #   - [FMUAddMetadataFailureException] on failure.
+    [void] AddMetadata([PSCustomObject[]] $Metadata)
+    {
+        try
+        {
+            foreach ($_metadatum in $Metadata)
+            {
+                if (Get-Member -InputObject $_metadatum -Name "VorbisComment")
+                {
+                    $this.AddVorbisComment($_metadatum.VorbisComment)
+                }
+
+                if (Get-Member -InputObject $_metadatum -Name "Pictures")
+                {
+                    $this.AddPicture($_metadatum.Pictures)
+                }
+            }
+        }
+        catch
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMUAddMetadataFailureException]::New()
+        }
+    }
 
     # Returns a FileInfo reference to a tag file from a UMS file.
     # Implements an abstract method from the [ForeignMetadataUpdater] class.
@@ -196,7 +211,7 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
 
             # Remove all tags if the option is set
             if ($this.RemoveAllComments)
-                { $_argumentList += "--remove-all-tags" }
+                { $_argumentList += "--remove-all" }
 
             # Prevent UTF8 re-conversion, which corrupts read data
             $_argumentList += "--no-utf8-convert"
@@ -213,7 +228,7 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
                     "",
                     $_picture.Description,
                     "",
-                    $_picture.File.FullName
+                    [System.Uri]::New($_picture.Uri).LocalPath
                 ))
                 $_argumentList += ("--import-picture-from={0}" `
                 -f $_specification)
@@ -342,40 +357,4 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
             throw $_.Exception
         }
     }
-}
-
-###############################################################################
-#   Enum VorbisCommentPictureType
-#==============================================================================
-#
-#   This enum defines friendly names for each type of album art picture which
-#   may be embedded into a Xiph.org container. The order of this enum type
-#   follows the specifications of the container format: the integer of each
-#   enum entry matches the integer expected by metaflac.
-#
-###############################################################################
-
-Enum VorbisCommentPictureType
-{
-    Other
-    FileIcon
-    OtherIcon
-    FrontCover
-    BackCover
-    LeafletPage
-    Media
-    LeadArtist
-    Artist
-    Conductor
-    Ensemble
-    Composer
-    Lyricist
-    RecordingLocation
-    RecordingSnapshot
-    PerformanceSnapshot
-    ScreenCapture
-    Fish
-    Illustration
-    ArtistLogo
-    PublisherLogo
 }

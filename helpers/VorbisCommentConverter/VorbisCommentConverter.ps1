@@ -232,9 +232,9 @@ class VorbisCommentConverter : ForeignMetadataConverter
     #       such a context.
     # Throws:
     #   - [FMCConversionFailureException] on conversion failure.
-    [string[]] Convert([object] $Metadata)
+    [PSCustomObject[]] Convert([object] $Metadata)
     {
-        [string[]] $_lines = @()
+        [PSCustomObject] $_objects = @()
 
         switch ($Metadata.XmlNamespaceUri)
         {
@@ -244,7 +244,7 @@ class VorbisCommentConverter : ForeignMetadataConverter
                 {
                     "albumTrackBinding"
                     {
-                        $_lines += (
+                        $_objects += (
                             $this.ConvertUmsAbeAlbumTrackBinding($Metadata))
                     }
 
@@ -269,7 +269,7 @@ class VorbisCommentConverter : ForeignMetadataConverter
             }
         }
 
-        return $_lines
+        return $_objects
     }
 
     ###########################################################################
@@ -288,9 +288,10 @@ class VorbisCommentConverter : ForeignMetadataConverter
     #       such a context.
     # Throws:
     #   - [FMCConversionFailureException] on conversion failure.
-    [string[]] ConvertUmsAbeAlbumTrackBinding([object] $Metadata)
+    [PSCustomObject] ConvertUmsAbeAlbumTrackBinding([object] $Metadata)
     {
-        [string[]] $_lines = @()
+        [string[]]         $_comments = @()
+        [PSCustomObject[]] $_pictures = @()
 
         $_album  = $Metadata.Album
         $_medium = $Metadata.Medium
@@ -298,25 +299,29 @@ class VorbisCommentConverter : ForeignMetadataConverter
 
         try
         {
-            $_lines += $this.RenderAlbumArtist($_album, $_track)
-            $_lines += $this.RenderAlbumLabels($_album)
-            $_lines += $this.RenderAlbumTitle($_album, $_track)
-            $_lines += $this.RenderComposers($_track)
-            $_lines += $this.RenderConductors($_track)
-            $_lines += $this.RenderDate($_album, $_track)
-            $_lines += $this.RenderIncipits($_track)
-            $_lines += $this.RenderLyricists($_track)
-            $_lines += $this.RenderMediumNumber($_medium, $_album)
-            $_lines += $this.RenderMusicalCatalogIds($_track)
-            $_lines += $this.RenderMusicalForms($_track)
-            $_lines += $this.RenderMusicalKeys($_track)
-            $_lines += $this.RenderMusicalStyle($_track)
-            $_lines += $this.RenderPerformers($_track)
-            $_lines += $this.RenderPlace($_album, $_track)
-            $_lines += $this.RenderStandardIds($_album, $_track)
-            $_lines += $this.RenderTrackNumber($_track, $_medium, $_album)
-            $_lines += $this.RenderTrackTitle($_track)
-            $_lines += $this.RenderWork($_track)
+            # Build Vorbis Comment statements
+            $_comments += $this.RenderAlbumArtist($_album, $_track)
+            $_comments += $this.RenderAlbumLabels($_album)
+            $_comments += $this.RenderAlbumTitle($_album, $_track)
+            $_comments += $this.RenderComposers($_track)
+            $_comments += $this.RenderConductors($_track)
+            $_comments += $this.RenderDate($_album, $_track)
+            $_comments += $this.RenderIncipits($_track)
+            $_comments += $this.RenderLyricists($_track)
+            $_comments += $this.RenderMediumNumber($_medium, $_album)
+            $_comments += $this.RenderMusicalCatalogIds($_track)
+            $_comments += $this.RenderMusicalForms($_track)
+            $_comments += $this.RenderMusicalKeys($_track)
+            $_comments += $this.RenderMusicalStyle($_track)
+            $_comments += $this.RenderPerformers($_track)
+            $_comments += $this.RenderPlace($_album, $_track)
+            $_comments += $this.RenderStandardIds($_album, $_track)
+            $_comments += $this.RenderTrackNumber($_track, $_medium, $_album)
+            $_comments += $this.RenderTrackTitle($_track)
+            $_comments += $this.RenderWork($_track)
+
+            # Build references to album pictures
+            $_pictures += $this.ExtractWorkPictures($_track.Piece.Work)
         }
 
         catch
@@ -325,7 +330,48 @@ class VorbisCommentConverter : ForeignMetadataConverter
             throw [FMCConversionFailureException]::New()
         }
 
-        return $_lines
+        return New-Object -Type PSCustomObject -Property @{
+            VorbisComment = $_comments;
+            Pictures      = $_pictures;
+        }
+    }
+
+    ###########################################################################
+    # Helpers
+    ###########################################################################
+
+    # Creates a single album picture as a PSCustomObject
+    [PSCustomObject] CreateAlbumPicture(
+        [VorbisCommentPictureType] $Type,
+        [string] $Description,
+        [System.Uri] $Uri)
+    {
+        return New-Object -Type PSCustomObject -Property @{
+            Type = $Type;
+            Description = $Description;
+            Uri = $Uri;
+        }
+    }
+
+    # Creates a single Vorbis Comment as a text string.
+    [string] CreateVorbisComment([string] $LabelId, [string] $LabelValue)
+    {
+        $_vc = ""
+        $_sanitizedValue = $LabelValue.Trim()
+
+        # We only return the comment if the label ID is known,
+        # if the label is not blank, and if the value is not empty.
+        # Else, the comment is silently discarded.
+        if (
+            ($this.VorbisLabels.ContainsKey($LabelId)) -and
+            ($this.VorbisLabels[$LabelId]) -and
+            ($_sanitizedValue))
+        {
+            
+            $_vc = $($this.VorbisLabels[$LabelId] + "=" + $_sanitizedValue)
+        }
+
+        return $_vc
     }
 
     ###########################################################################
@@ -1487,29 +1533,72 @@ class VorbisCommentConverter : ForeignMetadataConverter
         }
 
         return $_lines
-    } 
+    }
 
     ###########################################################################
-    # Vorbis Comment handling
+    #   Picture extractors
+    #--------------------------------------------------------------------------
+    #
+    #   Picture extractors extract references to album pictures from the
+    #   supplied metadata.
+    #
     ###########################################################################
 
-    [string] CreateVorbisComment([string] $LabelId, [string] $LabelValue)
+    [PSCustomObject[]] ExtractWorkPictures($WorkMetadata)
     {
-        $_vc = ""
-        $_sanitizedValue = $LabelValue.Trim()
+        [PSCustomObject[]] $_pictures = @()
+        $_validPictureTypes = @("portrait")
 
-        # We only return the comment if the label ID is known,
-        # if the label is not blank, and if the value is not empty.
-        # Else, the comment is silently discarded.
-        if (
-            ($this.VorbisLabels.ContainsKey($LabelId)) -and
-            ($this.VorbisLabels[$LabelId]) -and
-            ($_sanitizedValue))
+        foreach ($_composer in $WorkMetadata.composers)
         {
-            
-            $_vc = $($this.VorbisLabels[$LabelId] + "=" + $_sanitizedValue)
+            foreach ($_picture in $_composer.Pictures)
+            {
+                if ($_validPictureTypes -contains($_picture.PictureType))
+                {
+                    $_pictures += $this.CreateAlbumPicture(
+                        [VorbisCommentPictureType]::Composer,
+                        $_composer.ToString(),
+                        $_picture.Uri.AbsoluteUri)
+                }
+            }
         }
 
-        return $_vc
+        return $_pictures
     }
+}
+
+###############################################################################
+#   Enum VorbisCommentPictureType
+#==============================================================================
+#
+#   This enum defines friendly names for each type of album art picture which
+#   may be embedded into a Xiph.org container. The order of this enum type
+#   follows the specifications of the container format: the integer of each
+#   enum entry matches the integer expected by metaflac.
+#
+###############################################################################
+
+Enum VorbisCommentPictureType
+{
+    Other
+    FileIcon
+    OtherIcon
+    FrontCover
+    BackCover
+    LeafletPage
+    Media
+    LeadArtist
+    Artist
+    Conductor
+    Ensemble
+    Composer
+    Lyricist
+    RecordingLocation
+    RecordingSnapshot
+    PerformanceSnapshot
+    ScreenCapture
+    Fish
+    Illustration
+    ArtistLogo
+    PublisherLogo
 }

@@ -52,6 +52,22 @@ class FMUEmbeddedVersionUpdateException : ForeignMetadataUpdaterException
 }
 
 ###############################################################################
+#   Exception class FMUAddMetadataFailureException
+#==============================================================================
+#
+#   Thrown on metadata addition operation failure.
+#
+###############################################################################
+
+class FMUAddMetadataFailureException : ForeignMetadataUpdaterException
+{
+    FMUAddMetadataFailureException() : base()
+    {
+        $this.MainMessage = "Unable to add metadata to the updater."
+    }
+}
+
+###############################################################################
 #   Exception class FMUGetExternalVersionFileException
 #==============================================================================
 #
