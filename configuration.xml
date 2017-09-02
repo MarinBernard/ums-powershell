@@ -151,7 +151,6 @@
 			</constraints>
 			<options>
 				<option id="path-to-metaflac">C:\Program Files\Flac\metaflac.exe</option>
-				<option id="remove-all-comments">True</option>
 				<option id="tag-file-extension">.tags</option>
 			</options>
 		</helper>
@@ -254,10 +253,12 @@
 	</rendering>
 	<system>
 		<option id="document-cache-lifetime">600</option>
+		<option id="resource-cache-lifetime">600</option>
 		<option id="export-clixml-depth">15</option>
 		<option id="ums-file-extension">.ums</option>
 		<option id="ums-folder-name-cache">cache</option>
 		<option id="ums-folder-name-main">ums</option>
+		<option id="ums-folder-name-resource">res</option>
 		<option id="ums-folder-name-static">static</option>
 		<option id="hide-management-folder">True</option>
 	</system>

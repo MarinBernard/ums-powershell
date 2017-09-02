@@ -143,13 +143,39 @@ class FileManager
             throw [FMEnableManagementFailureException]::New($Path)
         }
 
-        # Try to create the management folder
+        # Try to create the static folder
         [EventLogger]::LogVerbose(
             "Creating a UMS management static directory at location: {0}" `
             -f $_staticFolder.FullName)        
         try
         {
             $_staticFolder = $_staticFolder.Create()
+        }
+        catch [System.IO.IOException]
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMEnableManagementFailureException]::New($Path)
+        }
+
+        # Try to get the full path to the resource folder
+        [System.IO.DirectoryInfo] $_resourceFolder = $null
+        try
+        {
+            $_resourceFolder = [FileManager]::GetResourceFolder($Path)
+        }
+        catch [FMGetFolderFailureException]
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMEnableManagementFailureException]::New($Path)
+        }
+
+        # Try to create the resource folder
+        [EventLogger]::LogVerbose(
+            "Creating a UMS management resource directory at location: {0}" `
+            -f $_resourceFolder.FullName)        
+        try
+        {
+            $_resourceFolder = $_resourceFolder.Create()
         }
         catch [System.IO.IOException]
         {
@@ -234,6 +260,25 @@ class FileManager
         {
             throw [FMMissingStaticFolderException]::New($Path)
         }
+
+        # Try to get a handle to the resource folder
+        [System.IO.DirectoryInfo] $_resourceFolder = $null
+        try
+        {
+            $_resourceFolder = [FileManager]::GetResourceFolder($Path)
+        }
+        catch [FMGetFolderFailureException]
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMTestManagementFailureException]::New($Path)
+        }
+        
+        # Test resource folder existence. It should exist. If it does not, we
+        # assume the management folder is inconsistent and throw an exception.
+        if (-not $_resourceFolder.Exists)
+        {
+            throw [FMMissingResourceFolderException]::New($Path)
+        }        
 
         # If we land here, management is declared enabled and valid.
         return $true
@@ -358,7 +403,7 @@ class FileManager
             throw [FMGetFolderFailureException]::New($Path, "static")
         } 
 
-        # Try to get the name of the cache folder from the configuration store
+        # Try to get the name of the static folder from the configuration store
         try
         {
             $_staticFolderName  = ([ConfigurationStore]::GetSystemItem(
@@ -375,6 +420,44 @@ class FileManager
             [System.IO.DirectoryInfo] (Join-Path `
                 -Path $_managementFolder.FullName `
                 -ChildPath $_staticFolderName))
+    }
+
+    # Returns the path of the resource folder for the specified content folder.
+    # Throws [FMGetFolderFailureException] if an unrecoverable error is met.
+    static [System.IO.DirectoryInfo] GetResourceFolder(
+        [System.IO.DirectoryInfo] $Path)
+    {
+        [System.IO.DirectoryInfo] $_managementFolder = $null
+        [string] $_resourceFolderName = $null
+
+        # Try to get the path to the management folder.
+        try
+        {
+            $_managementFolder = [FileManager]::GetManagementFolder($Path)
+        }
+        catch [FMGetFolderFailureException]
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMGetFolderFailureException]::New($Path, "resource")
+        } 
+
+        # Try to get the name of the static folder from the configuration store
+        try
+        {
+            $_resourceFolderName  = ([ConfigurationStore]::GetSystemItem(
+                "UmsFolderNameResource").Value)
+        }
+        catch [ConfigurationStoreException]
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMGetFolderFailureException]::New($Path, "resource")
+        }
+
+        # We assume Join-Path will never throw an exception.
+        return (
+            [System.IO.DirectoryInfo] (Join-Path `
+                -Path $_managementFolder.FullName `
+                -ChildPath $_resourceFolderName))
     }
 
     ###########################################################################
@@ -871,6 +954,36 @@ class UmsFile
     }
 
     ###########################################################################
+    # Linked resources
+    ###########################################################################
+
+    # Fetches a remote resource and returns a reference to a local copy of that
+    # resource. This method is just a wrapper around the [ResourceCache] static
+    # class, and allows to link a remote resource with a UmsFile instance. It
+    # is overriden by the UmsManagedFile child class, which adds support for
+    # storing local, managed copies of linked remote resources.
+    # Throws:
+    #   - [UFFetchLinkedResourceFailureException] if the resource cannot be
+    #       retrieved.
+    [System.IO.FileInfo] GetLinkedResource([System.Uri] $Uri)
+    {
+        [System.IO.FileInfo] $_result = $null
+
+        try
+        {
+            $_result = [ResourceCache]::GetResource($Uri)
+        }
+        catch
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [UFFetchLinkedResourceFailureException]::New(
+                $this.File, $Uri)
+        }
+
+        return $_result
+    }
+
+    ###########################################################################
     # Helpers
     ###########################################################################
 
@@ -920,11 +1033,13 @@ class UmsManagedFile : UmsFile
     hidden [System.IO.DirectoryInfo] $CacheFolder
     hidden [System.IO.DirectoryInfo] $ManagementFolder
     hidden [System.IO.DirectoryInfo] $StaticFolder
+    hidden [System.IO.DirectoryInfo] $ResourceFolder
 
     # URI to folders involved in UMS management
     hidden [System.Uri] $CacheFolderUri
     hidden [System.Uri] $ManagementFolderUri
     hidden [System.Uri] $StaticFolderUri
+    hidden [System.Uri] $ResourceFolderUri
 
     # Properties related to the static version of the item
     hidden [System.IO.FileInfo] $StaticFile
@@ -1069,6 +1184,28 @@ class UmsManagedFile : UmsFile
             [EventLogger]::LogException($_.Exception)
             throw [UFUriCreationFailureException]::New(
                 $this.StaticFolder.FullName)
+        }
+
+        # Resource folder
+        [EventLogger]::LogVerbose("Get the resource folder of the instance.")
+        try
+        {   
+            $this.ResourceFolder = (
+                [FileManager]::GetResourceFolder($this.ContentFolder))
+            $this.ResourceFolderUri = (
+                [System.Uri]::New($this.ResourceFolder.FullName))
+        }
+        catch [FileManagerException]
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [UFGetManagementFolderFailureException]::New(
+                $this.File, "resource")
+        }
+        catch [System.SystemException]
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [UFUriCreationFailureException]::New(
+                $this.ResourceFolder.FullName)
         }
     }
 
@@ -1301,6 +1438,49 @@ class UmsManagedFile : UmsFile
 
         # Return a new UmsManagedFile instance
         return [UmsManagedFile]::New($_newUmsFileInstance.File)
+    }
+
+    ###########################################################################
+    # Linked resources
+    ###########################################################################
+
+    # Fetches a remote resource and returns a reference to a local copy of that
+    # resource. This method is just a wrapper around the [ResourceCache] static
+    # class, and allows to link a remote resource with a UmsFile instance. It
+    # is overriden by the UmsManagedFile child class, which adds support for
+    # storing local, managed copies of linked remote resources.
+    # Throws:
+    #   - [UFFetchLinkedResourceFailureException] if the resource cannot be
+    #       retrieved.
+    [System.IO.FileInfo] GetLinkedResource([System.Uri] $Uri)
+    {
+        [System.IO.FileInfo] $_resource = $null
+        [string] $_hash = $null
+
+        try
+        {
+            # Get the resource (call parent method)
+            $_resource = ([UmsFile] $this).GetLinkedResource($Uri)
+
+            # Build resource file name
+            $_managedResource = Join-Path `
+                -Path $this.ResourceFolder.FullName `
+                -ChildPath $_resource.Name
+
+            # Copy the resource to the managed resources folder.
+            Copy-Item `
+                -Path $_resource.FullName `
+                -Destination $_managedResource `
+                -Force
+        }
+        catch
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [UFFetchLinkedResourceFailureException]::New(
+                $this.File, $Uri)
+        }
+
+        return $_resource
     }
 
     ###########################################################################

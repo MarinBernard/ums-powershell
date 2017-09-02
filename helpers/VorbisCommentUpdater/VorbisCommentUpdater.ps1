@@ -20,9 +20,6 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     # The path to the MetaFlac utility
     hidden [string] $PathToMetaflac
 
-    # Whether all Vorbis Comments are removed before adding new ones
-    hidden [bool] $RemoveAllComments
-
     # The extension of Vorbis Comment tag files, including the dot.
     hidden [string] $TagFileExtension
 
@@ -83,7 +80,6 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
         
         switch ($Name)
         {
-            "RemoveAllComments" { $this.RemoveAllComments = $Value }
             "PathToMetaflac"    { $this.PathToMetaflac = $Value }
             "TagFileExtension"  { $this.TagFileExtension = $Value }
 
@@ -204,14 +200,13 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
             $_temporaryFile = New-TemporaryFile
 
             # Export Vorbis Comment statements to the temporary file.
-            $this.WriteTagFile($_temporaryFile, $this.VorbisCommentList)  
+            $this.WriteTagFile($_temporaryFile, $this.VorbisCommentList)
+            
+            # Remove previous metadata
+            $this.RemoveAllMetadata($File)
 
             # Build the argument list for metaflac
             [string[]] $_argumentList = @()
-
-            # Remove all tags if the option is set
-            if ($this.RemoveAllComments)
-                { $_argumentList += "--remove-all" }
 
             # Prevent UTF8 re-conversion, which corrupts read data
             $_argumentList += "--no-utf8-convert"
@@ -228,7 +223,7 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
                     "",
                     $_picture.Description,
                     "",
-                    [System.Uri]::New($_picture.Uri).LocalPath
+                    $File.GetLinkedResource($_picture.Uri).FullName
                 ))
                 $_argumentList += ("--import-picture-from={0}" `
                 -f $_specification)
@@ -302,6 +297,33 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     ###########################################################################
     # Helpers
     ###########################################################################
+
+    # Removes all metadata from a FLAC file.
+    # Throws:
+    #   - [FMUEmbeddedVersionUpdateException] on removal failure.
+    [void] RemoveAllMetadata([UmsFile] $File)
+    {
+        try
+        {
+            # Build the argument list for metaflac
+            [string[]] $_argumentList = @()
+
+            # Remove all metadata
+            $_argumentList += "--remove-all"
+
+            # Name of the target FLAC file
+            $_argumentList += $File.ContentFile.FullName
+
+            # Invoke metaflac
+            $this.InvokeMetaflac($_argumentList)
+        }
+        catch
+        {
+            [EventLogger]::LogException($_.Exception)
+            throw [FMUEmbeddedVersionUpdateException]::new(
+                $File.ContentFile.FullName)
+        }
+    }
 
     # Invoke metaflac with the specified arguments.
     # Throws:

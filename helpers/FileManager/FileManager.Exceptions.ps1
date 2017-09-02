@@ -110,6 +110,26 @@ class FileManagerException : UmsException
             }
         }
 
+        #######################################################################
+        #   Exception class FMMissingResourceFolderException
+        #======================================================================
+        #
+        #   Thrown when the resource folder is missing from the management
+        #   folder.
+        #
+        #######################################################################
+
+        class FMMissingResourceFolderException : FMInconsistentStateException
+        {
+            FMMissingResourceFolderException([string] $Path) : base($Path)
+            {
+                $this.MainMessage = ($(
+                    "An inconsistency was detected in the management folder " + `
+                    "linked to the following location, which lacks a resource " + `
+                    "folder: {0}") -f $Path)
+            }
+        }        
+
     ###########################################################################
     #   Exception class FMDisableManagementFailureException
     #==========================================================================
@@ -359,6 +379,29 @@ class UmsFileException : UmsException
                 "Unable to determine the cardinality of the UMS file " + `
                 "at the following location: {0}") `
                 -f $File.FullName)
+        }
+    }
+
+    ###########################################################################
+    #   Exception class UFFetchLinkedResourceFailureException
+    #==========================================================================
+    #
+    #   Thrown by the [UmsFile].GetLinkedresource() method when a remote
+    #   resource cannot be fetched.
+    #
+    ###########################################################################
+
+    class UFFetchLinkedResourceFailureException : UmsFileException
+    {
+        UFFetchLinkedResourceFailureException(
+            [System.IO.FileInfo] $File, 
+            [System.Uri] $Uri)
+        : base()
+        {
+            $this.MainMessage = ($(
+                "Unable to fetch the resource at '{0}', which is linked " + `
+                "to the following UMS file: {1}") `
+                -f @($Uri.AbsoluteUri, $File.FullName))
         }
     }
 

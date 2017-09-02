@@ -181,8 +181,7 @@ class DocumentCache
     }
 
     # Returns a cached document from its URI. If the cached document is not
-    # present in the cache, it is fetched and cached, then the method is called
-    # again recursively.
+    # present in the cache, an exception is thrown.
     # Throws:
     #   - [DCCacheMissException] on cache miss.
     #   - [DCSourceUriUpdateFailureException] on source URI update failure.

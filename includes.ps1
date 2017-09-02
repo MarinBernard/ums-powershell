@@ -22,6 +22,10 @@
 . "$PSScriptRoot\helpers\RelaxNgValidator\RelaxNgValidator.Exceptions.ps1"
 . "$PSScriptRoot\helpers\RelaxNgValidator\RelaxNgValidator.ps1"
 
+# Resource cache (Needed by the FileManager helper)
+. "$PSScriptRoot\helpers\ResourceCache\ResourceCache.Exceptions.ps1"
+. "$PSScriptRoot\helpers\ResourceCache\ResourceCache.ps1"
+
 # Document cache (Needed by the DocumentFactory helper)
 . "$PSScriptRoot\helpers\DocumentCache\classes\UmsDocument.Exceptions.ps1"
 . "$PSScriptRoot\helpers\DocumentCache\classes\UmsDocument.ps1"
@@ -188,3 +192,8 @@
 . "$PSScriptRoot\commands\ManagedFile\Remove-UmsManagedFile.ps1"
 . "$PSScriptRoot\commands\ManagedFile\Rename-UmsManagedFile.ps1"
 . "$PSScriptRoot\commands\ManagedFile\Update-UmsManagedFile.ps1"
+
+# *-UmsResourceCache
+. "$PSScriptRoot\commands\ResourceCache\Clear-UmsResourceCache.ps1"
+. "$PSScriptRoot\commands\ResourceCache\Reset-UmsResourceCache.ps1"
+. "$PSScriptRoot\commands\ResourceCache\Measure-UmsResourceCache.ps1"

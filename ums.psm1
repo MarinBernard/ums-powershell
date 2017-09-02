@@ -22,6 +22,10 @@ $global:ModuleStrings = (
 # Initialize caching toolset
 ###############################################################################
 
+# Initialize the resource cache
+[ResourceCache]::Initialize(
+    (Join-Path -Path $env:LocalAppData -ChildPath "UMS\ResourceCache"))
+
 # Initialize the document cache
 [DocumentCache]::Initialize(
     (Join-Path -Path $env:LocalAppData -ChildPath "UMS\DocumentCache"))
@@ -72,3 +76,8 @@ Export-ModuleMember -Function Get-UmsManagedFile
 Export-ModuleMember -Function Remove-UmsManagedFile
 Export-ModuleMember -Function Rename-UmsManagedFile
 Export-ModuleMember -Function Update-UmsManagedFile
+
+# *-UmsResourceCache
+Export-ModuleMember -Function Clear-UmsResourceCache
+Export-ModuleMember -Function Reset-UmsResourceCache
+Export-ModuleMember -Function Measure-UmsResourceCache
