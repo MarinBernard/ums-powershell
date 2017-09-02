@@ -30,6 +30,9 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     # Visible properties
     ###########################################################################
 
+    # The set of pictures which will be embedded into the destination file.
+    [hashtable[]] $PictureList
+
     # The set of Vorbis Comment statements which will be embedded into the
     # destination file.
     [string[]] $VorbisCommentList
@@ -97,7 +100,28 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
     # Metadata setters
     ###########################################################################
 
-    # Adds one of several Vorbis Comment statements to the updater queue.
+    # Proxy to AddPicture(3) for pictures without a description
+    [void] AddPicture(
+        [VorbisCommentPictureType] $Type,
+        [System.IO.FileInfo] $PictureFile)
+    {
+        $this.AddPicture($Type, $PictureFile, "")
+    }
+
+    # Adds a reference to a single album picture to the updater queue.
+    [void] AddPicture(
+        [VorbisCommentPictureType] $Type,
+        [System.IO.FileInfo] $PictureFile,
+        [string] $Description)
+    {
+        $this.PictureList += @{
+            Type = $Type
+            Description = $Description
+            File = $PictureFile
+        }
+    }
+
+    # Adds one or several Vorbis Comment statements to the updater queue.
     [void] AddVorbisComment([string[]] $Statements)
     {
         $this.VorbisCommentList += $Statements
@@ -169,14 +193,32 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
 
             # Build the argument list for metaflac
             [string[]] $_argumentList = @()
+
             # Remove all tags if the option is set
             if ($this.RemoveAllComments)
                 { $_argumentList += "--remove-all-tags" }
+
             # Prevent UTF8 re-conversion, which corrupts read data
             $_argumentList += "--no-utf8-convert"
+
             # Name of the tag file storing Vorbis Comments
             $_argumentList += ("--import-tags-from=`"{0}`"" `
                 -f $_temporaryFile.FullName)
+
+            # List of pictures to embed
+            foreach ($_picture in $this.PictureList)
+            {
+                $_specification = ("{0}|{1}|{2}|{3}|{4}" -f @(
+                    $_picture.Type.Value__,
+                    "",
+                    $_picture.Description,
+                    "",
+                    $_picture.File.FullName
+                ))
+                $_argumentList += ("--import-picture-from={0}" `
+                -f $_specification)
+            }
+
             # Name of the target FLAC file
             $_argumentList += $File.ContentFile.FullName
 
@@ -300,4 +342,40 @@ class VorbisCommentUpdater : ForeignMetadataUpdater
             throw $_.Exception
         }
     }
+}
+
+###############################################################################
+#   Enum VorbisCommentPictureType
+#==============================================================================
+#
+#   This enum defines friendly names for each type of album art picture which
+#   may be embedded into a Xiph.org container. The order of this enum type
+#   follows the specifications of the container format: the integer of each
+#   enum entry matches the integer expected by metaflac.
+#
+###############################################################################
+
+Enum VorbisCommentPictureType
+{
+    Other
+    FileIcon
+    OtherIcon
+    FrontCover
+    BackCover
+    LeafletPage
+    Media
+    LeadArtist
+    Artist
+    Conductor
+    Ensemble
+    Composer
+    Lyricist
+    RecordingLocation
+    RecordingSnapshot
+    PerformanceSnapshot
+    ScreenCapture
+    Fish
+    Illustration
+    ArtistLogo
+    PublisherLogo
 }
